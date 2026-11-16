@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ToonAI Studio</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#100f20;
+ color:white;
+ font-family:Arial,sans-serif;
+}
+header{
+ padding:20px;
+ background:#211b3b;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+}
+.logo{font-size:23px;font-weight:bold;color:#c5a8ff}
+.hero{text-align:center;padding:35px 18px}
+.hero h1{font-size:35px;margin:10px 0}
+.hero p{color:#c3bbd9;line-height:1.5}
+.card{
+ background:#211d36;
+ border:1px solid #40375c;
+ border-radius:18px;
+ padding:20px;
+ margin:16px;
+}
+h2{font-size:21px}
+label{display:block;margin:15px 0 8px}
+textarea,select{
+ width:100%;
+ padding:14px;
+ border:1px solid #554b70;
+ border-radius:10px;
+ background:#121020;
+ color:white;
+ font-size:15px;
+}
+textarea{height:110px;resize:vertical}
+button{
+ width:100%;
+ padding:15px;
+ margin-top:15px;
+ border:0;
+ border-radius:12px;
+ background:linear-gradient(90deg,#a78bfa,#f09ac7);
+ color:#171126;
+ font-size:16px;
+ font-weight:bold;
+ cursor:pointer;
+}
+button:disabled{opacity:.6}
+.status{font-size:13px;color:#d7c7ff;margin-top:12px}
+.preview{display:none;margin-top:15px}
+.preview img,.preview video{
+ width:100%;border-radius:12px
+}
+a{color:#d5baff}
+footer{text-align:center;padding:25px;color:#9188aa}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="logo">🎬 ToonAI Studio</div>
+ <span>3D AI</span>
+</header>
+
+<section class="hero">
+ <h1>Create Your Cartoon World ✨</h1>
+ <p>Apni kahani likho aur use 3D cartoon image ya video mein badlo!</p>
+</section>
+
+<section class="card">
+ <h2>🖼️ AI Cartoon Image</h2>
+ <label>Apna image prompt likho</label>
+ <textarea id="imagePrompt" placeholder="A cute 3D cartoon rabbit in a magical forest..."></textarea>
+ <button id="imageBtn" onclick="generateImage()">Generate Image ✨</button>
+ <div class="status" id="imageStatus"></div>
+ <div class="preview" id="imagePreview">
+  <img id="generatedImage" alt="Generated cartoon">
+  <p><a id="imageDownload" download="toonai-image.png">Download Image</a></p>
+ </div>
+</section>
+
+<section class="card">
+ <h2>🎥 30 Second Cartoon Video</h2>
+ <label>Apni story likho</label>
+ <textarea id="videoPrompt" placeholder="एक छोटा खरगोश जंगल में खो जाता है और उसे एक नया दोस्त मिलता है..."></textarea>
+ <label>Language</label>
+ <select id="language">
+  <option>Hindi</option>
+  <option>English</option>
+ </select>
+ <button id="videoBtn" onclick="generateVideo()">Generate Video 🎬</button>
+ <div class="status" id="videoStatus"></div>
+ <div class="preview" id="videoPreview">
+  <video id="generatedVideo" controls playsinline></video>
+  <p><a id="videoDownload" download="toonai-video.mp4">Download Video</a></p>
+ </div>
+</section>
+
+<footer>
+ ToonAI Studio © 2026<br>
+ Create your imagination.
+</footer>
+
+<script>
+/* Apne deployed Cloudflare Worker ka URL yahan paste karna */
+const API_URL = "YOUR_WORKER_URL";
+
+async function generate(type){
+ const isImage = type === "image";
+ const prompt = document.getElementById(
+  isImage ? "imagePrompt" : "videoPrompt"
+ ).value.trim();
+
+ const status = document.getElementById(type+"Status");
+ const btn = document.getElementById(type+"Btn");
+
+ if(!prompt){
+  status.textContent="Pehle apna prompt ya story likho!";
+  return;
+ }
+
+ if(API_URL === "YOUR_WORKER_URL"){
+  status.textContent="Pehle Worker URL connect karo.";
+  return;
+ }
+
+ btn.disabled=true;
+ status.textContent="AI generation chal rahi hai... Please wait.";
+
+ try{
+  const response = await fetch(API_URL + "/api/" + type,{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    prompt:prompt,
+    language:document.getElementById("language").value
+   })
+  });
+
+  if(!response.ok){
+   const error = await response.json();
+   throw new Error(error.error || "Generation failed");
+  }
+
+  const blob=await response.blob();
+  const fileURL=URL.createObjectURL(blob);
+
+  if(isImage){
+   document.getElementById("generatedImage").src=fileURL;
+   document.getElementById("imageDownload").href=fileURL;
+   document.getElementById("imagePreview").style.display="block";
+  }else{
+   document.getElementById("generatedVideo").src=fileURL;
+   document.getElementById("videoDownload").href=fileURL;
+   document.getElementById("videoPreview").style.display="block";
+  }
+
+  status.textContent="Ho gaya! 🎉";
+ }catch(error){
+  status.textContent="Error: "+error.message;
+ }finally{
+  btn.disabled=false;
+ }
+}
+
+function generateImage(){generate("image")}
+function generateVideo(){generate("video")}
+</script>
+
+</body>
+  </html>
